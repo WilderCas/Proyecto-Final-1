@@ -461,6 +461,18 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM dbo.TB_TARJETA t JOIN dbo.TB_TIPO_TARJETA tt ON tt.id_tipo_tarjeta=t.id_tipo_tarjeta
  WHERE t.id_tarjeta=@id_tarjeta AND tt.nombre='Credito' AND t.estado='Activa' AND t.fecha_vencimiento>=CONVERT(date,GETDATE()))
   THROW 51061,'La tarjeta debe ser de crédito, estar activa y no vencida.',1;
+   -- Comprobar que la cuenta vinculada esté activa.
+ IF NOT EXISTS (
+     SELECT 1
+     FROM dbo.TB_TARJETA AS t
+     INNER JOIN dbo.TB_CUENTA AS c
+         ON c.id_cuenta = t.id_cuenta
+     WHERE t.id_tarjeta = @id_tarjeta
+       AND c.estado = 'Activa'
+ )
+     THROW 51030,
+         'La cuenta vinculada debe existir y estar activa para realizar consumos.',
+         1;
  IF (SELECT limite_credito-saldo_utilizado FROM dbo.TB_TARJETA WHERE id_tarjeta=@id_tarjeta)<@monto
   THROW 51062,'Límite de crédito insuficiente.',1;
  -- Actualizar la obligación de crédito sin perder el consumo o pago asociado.
